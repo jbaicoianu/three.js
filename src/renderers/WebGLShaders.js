@@ -1280,7 +1280,7 @@ THREE.ShaderLib = {
 
 			"void main() {",
 
-				"gl_FragColor = vec4( vLightWeighting, 1.0 );",
+				"gl_FragColor = vec4( vLightWeighting, opacity );",
 
 				THREE.ShaderChunk[ "map_fragment" ],
 				THREE.ShaderChunk[ "alphatest_fragment" ],
@@ -1463,6 +1463,7 @@ THREE.ShaderLib = {
 		vertexShader: [
 
 			"varying vec3 vLightWeighting;",
+			"varying vec3 vNormal;",
 
 			THREE.ShaderChunk[ "map_pars_vertex" ],
 			THREE.ShaderChunk[ "lightmap_pars_vertex" ],
@@ -1528,7 +1529,7 @@ THREE.ShaderLib = {
 
 			"void main() {",
 
-				"gl_FragColor = vec4( vLightWeighting, 1.0 );",
+				"gl_FragColor = vec4( vLightWeighting, opacity );",
 
 				THREE.ShaderChunk[ "map_fragment" ],
 				THREE.ShaderChunk[ "alphatest_fragment" ],
