@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - geometries</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="../build/three.js"></script>
+
+		<script src="js/Detector.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+
+		<script src="../src/extras/geometries/BoxGeometry2.js"></script>
+		<script src="../src/extras/geometries/PlaneGeometry2.js"></script>
+		<script src="../src/objects/MergedMesh.js"></script>
+		<script src="js/BufferGeometryUtils.js"></script>
+		<script src="http://jeromeetienne.github.io/threex.rendererstats/threex.rendererstats.js"></script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats, renderstats;
+
+			var camera, scene, renderer, projector, raycaster;
+			var mouse = new THREE.Vector2(), INTERSECTED;
+
+			var boxes = [];
+			var merged;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.y = 0;
+				camera.position.z = 15;
+
+				scene = new THREE.Scene();
+
+				scene.add( new THREE.AmbientLight( 0x404040 ) );
+
+				var light = new THREE.DirectionalLight( 0xffffff );
+				light.position.set( 0, 0, 1 );
+				scene.add( light );
+
+				projector = new THREE.Projector();
+				raycaster = new THREE.Raycaster();
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				renderstats = new THREEx.RendererStats()
+				renderstats.domElement.style.position = 'absolute'
+				renderstats.domElement.style.left = '0px'
+				renderstats.domElement.style.bottom = '0px'
+				document.body.appendChild( renderstats.domElement )
+
+				var materials = [
+					new THREE.MeshLambertMaterial({ color: 0xff0000, }),
+					new THREE.MeshLambertMaterial({ color: 0x00ff00, }),
+					new THREE.MeshLambertMaterial({ color: 0x0000ff, }),
+				];
+
+				merged = new THREE.MergedMesh();
+
+				var numboxes = 100;
+				var boxsize = 50;
+        var shapes = [
+				  new THREE.BoxGeometry2(1, 2, 1, 1),
+				  new THREE.BoxGeometry2(1, 1, 1, 1),
+				  new THREE.BoxGeometry2(5, .5, .5, 1),
+        ];
+        for (var i = 0; i < shapes.length; i++) {
+          shapes[i].computeVertexNormals();
+        }
+
+				// Create a number of boxes, and merge them into the MergedMesh
+
+				for (var i = 0; i < numboxes; i++) {
+          var newbox = new THREE.Mesh(shapes[Math.round(Math.random() * 1000) % shapes.length], materials[Math.round(Math.random() * 1000) % materials.length]);
+					newbox.position.set(Math.random() * boxsize - boxsize/2, Math.random() * boxsize - boxsize / 2, -Math.random() * boxsize);
+					newbox.rotation.set((Math.random() * 2 * Math.PI) - Math.PI, (Math.random() * 2 * Math.PI) - Math.PI, (Math.random() * 2 * Math.PI) - Math.PI);
+					//newbox.position.set(2 * i, 0, -5);
+
+					boxes.push(newbox);
+					merged.merge(newbox);
+				}
+
+				scene.add(merged);
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+				renderstats.update(renderer);
+
+			}
+
+			function render() {
+
+				var timer = Date.now() * 0.0001;
+
+				// find intersections
+
+/*
+				var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+				projector.unprojectVector( vector, camera );
+
+				raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+
+				var intersects = raycaster.intersectObjects( scene.children, true);
+
+				if ( intersects.length > 0 ) {
+console.log(intersects);
+
+					if ( INTERSECTED != intersects[ 0 ].object ) {
+
+						//if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+						INTERSECTED = intersects[ 0 ].object;
+						//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+						//INTERSECTED.material.emissive.setHex( 0xff0000 );
+
+					}
+
+				} else {
+
+					//if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+					INTERSECTED = null;
+
+				}
+*/
+				for ( var i = 0, l = boxes.length; i < l; i ++ ) {
+
+					var object = boxes[ i ];
+
+          // All of this weirdness is to make all the objects spin in different directions at different speeds
+					var dir1 = (object.id % 2 == 0 ? -1 : 1);
+					var dir2 = (object.id % 3 == 0 ? -1 : 1);
+					var dir3 = (object.id % 4 == 0 ? -1 : 1);
+					var dir4 = (object.id % 5 == 0 ? -1 : 1);
+					var dir5 = (object.id % 6 == 0 ? -1 : 1);
+					var dir6 = (object.id % 7 == 0 ? -1 : 1);
+ 
+					if (object) {
+						object.rotation.x = timer * 10 * Math.sin(object.id) * dir1 * dir4;
+						object.rotation.y = timer * 10 * Math.cos(object.id) * dir2 * dir5;
+						object.rotation.z = timer * 5 * dir3 * dir6;
+					}
+
+				}
+/*
+					if (INTERSECTED) {
+console.log('do');
+						INTERSECTED.rotation.x = timer * 5;
+						INTERSECTED.rotation.y = Math.sin(timer * 5);
+						INTERSECTED.rotation.z = timer * 5;
+					}
+*/
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
+
+
