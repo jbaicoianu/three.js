@@ -23,6 +23,7 @@
 		<script src="../src/extras/geometries/BoxGeometry2.js"></script>
 		<script src="../src/extras/geometries/PlaneGeometry2.js"></script>
 		<script src="../src/objects/MergedMesh.js"></script>
+		<script src="js/libs/dat.gui.min.js"></script>
 		<script src="js/BufferGeometryUtils.js"></script>
 		<script src="http://jeromeetienne.github.io/threex.rendererstats/threex.rendererstats.js"></script>
 
@@ -33,10 +34,28 @@
 			var container, stats, renderstats;
 
 			var camera, scene, renderer, projector, raycaster;
-			var mouse = new THREE.Vector2(), INTERSECTED;
+			var mouse = new THREE.Vector2();
 
+			var materials = [], shapes = [];
 			var boxes = [];
 			var merged;
+			var updatetimer = false;
+			var lastsettings = {};
+
+			var settings = {
+				objects: 200,
+				percentInMotion: 10,
+				materials: 3,
+				shapes: 3,
+				viewingArea: 100,
+			}
+
+			var gui = new dat.GUI();
+			gui.add( settings, "objects", 1, 10000, settings.objects ).step(1).onChange(updateObjectCount);
+			gui.add( settings, "percentInMotion", 0, 100, settings.percentInMotion ).step(1);
+			gui.add( settings, "materials", 1, 10, settings.materials ).step(1).onChange(updateObjectCount);
+			gui.add( settings, "shapes", 1, 10, settings.shapes ).step(1).onChange(updateObjectCount);
+			gui.add( settings, "viewingArea", 10, 1000, settings.viewingArea ).step(10).onChange(updateObjectCount);
 
 			init();
 			animate();
@@ -48,7 +67,7 @@
 
 				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
 				camera.position.y = 0;
-				camera.position.z = 15;
+				camera.position.z = settings.viewingArea;
 
 				scene = new THREE.Scene();
 
@@ -77,41 +96,15 @@
 				renderstats.domElement.style.bottom = '0px'
 				document.body.appendChild( renderstats.domElement )
 
-				var materials = [
-					new THREE.MeshLambertMaterial({ color: 0xff0000, }),
-					new THREE.MeshLambertMaterial({ color: 0x00ff00, }),
-					new THREE.MeshLambertMaterial({ color: 0x0000ff, }),
-				];
-
 				merged = new THREE.MergedMesh();
 
-				var numboxes = 100;
-				var boxsize = 50;
-        var shapes = [
-				  new THREE.BoxGeometry2(1, 2, 1, 1),
-				  new THREE.BoxGeometry2(1, 1, 1, 1),
-				  new THREE.BoxGeometry2(5, .5, .5, 1),
-        ];
-        for (var i = 0; i < shapes.length; i++) {
-          shapes[i].computeVertexNormals();
-        }
-
-				// Create a number of boxes, and merge them into the MergedMesh
-
-				for (var i = 0; i < numboxes; i++) {
-          var newbox = new THREE.Mesh(shapes[Math.round(Math.random() * 1000) % shapes.length], materials[Math.round(Math.random() * 1000) % materials.length]);
-					newbox.position.set(Math.random() * boxsize - boxsize/2, Math.random() * boxsize - boxsize / 2, -Math.random() * boxsize);
-					newbox.rotation.set((Math.random() * 2 * Math.PI) - Math.PI, (Math.random() * 2 * Math.PI) - Math.PI, (Math.random() * 2 * Math.PI) - Math.PI);
-					//newbox.position.set(2 * i, 0, -5);
-
-					boxes.push(newbox);
-					merged.merge(newbox);
-				}
+				updateObjects();
 
 				scene.add(merged);
 
 				window.addEventListener( 'resize', onWindowResize, false );
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
 
 			}
 
@@ -132,6 +125,11 @@
 				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
 			}
+			function onDocumentMouseWheel( event ) {
+
+				camera.position.z -= event.wheelDelta / 10;
+
+			}
 
 			//
 
@@ -149,69 +147,130 @@
 
 				var timer = Date.now() * 0.0001;
 
-				// find intersections
+				camera.position.x = ( (mouse.x * window.innerWidth) - camera.position.x ) * .05;
+				camera.position.y = ( - (mouse.y * window.innerHeight) - camera.position.y ) * .05;
 
-/*
-				var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
-				projector.unprojectVector( vector, camera );
+				camera.lookAt( scene.position );
 
-				raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
-
-				var intersects = raycaster.intersectObjects( scene.children, true);
-
-				if ( intersects.length > 0 ) {
-console.log(intersects);
-
-					if ( INTERSECTED != intersects[ 0 ].object ) {
-
-						//if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-						INTERSECTED = intersects[ 0 ].object;
-						//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-						//INTERSECTED.material.emissive.setHex( 0xff0000 );
-
+				var numobjects = boxes.length;
+				if (settings.percentInMotion > 0) {
+					// Animate a configurable percentage of the objects in the scene
+					var inmotion = Math.floor(numobjects * (settings.percentInMotion / 100));
+					var startobj = Math.floor(timer) % numobjects;
+					for (var i = startobj; i < startobj + inmotion; i++) {
+						var object = boxes[i % boxes.length];
+						if (object) {
+							// All of this weirdness is to make all the objects spin in different directions at different speeds
+							var dir1 = (object.id % 2 == 0 ? -1 : 1);
+							var dir2 = (object.id % 3 == 0 ? -1 : 1);
+							var dir3 = (object.id % 4 == 0 ? -1 : 1);
+							var dir4 = (object.id % 5 == 0 ? -1 : 1);
+							var dir5 = (object.id % 6 == 0 ? -1 : 1);
+							var dir6 = (object.id % 7 == 0 ? -1 : 1);
+							object.rotation.x = timer * 10 * Math.sin(object.id) * dir1 * dir4;
+							object.rotation.y = timer * 10 * Math.cos(object.id) * dir2 * dir5;
+							object.rotation.z = timer * 5 * dir3 * dir6;
+						}
 					}
-
-				} else {
-
-					//if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-					INTERSECTED = null;
-
 				}
-*/
-				for ( var i = 0, l = boxes.length; i < l; i ++ ) {
-
-					var object = boxes[ i ];
-
-          // All of this weirdness is to make all the objects spin in different directions at different speeds
-					var dir1 = (object.id % 2 == 0 ? -1 : 1);
-					var dir2 = (object.id % 3 == 0 ? -1 : 1);
-					var dir3 = (object.id % 4 == 0 ? -1 : 1);
-					var dir4 = (object.id % 5 == 0 ? -1 : 1);
-					var dir5 = (object.id % 6 == 0 ? -1 : 1);
-					var dir6 = (object.id % 7 == 0 ? -1 : 1);
- 
-					if (object) {
-						object.rotation.x = timer * 10 * Math.sin(object.id) * dir1 * dir4;
-						object.rotation.y = timer * 10 * Math.cos(object.id) * dir2 * dir5;
-						object.rotation.z = timer * 5 * dir3 * dir6;
-					}
-
-				}
-/*
-					if (INTERSECTED) {
-console.log('do');
-						INTERSECTED.rotation.x = timer * 5;
-						INTERSECTED.rotation.y = Math.sin(timer * 5);
-						INTERSECTED.rotation.z = timer * 5;
-					}
-*/
+			
 
 				renderer.render( scene, camera );
 
 			}
 
+			function updateObjectCount() {
+				if (updatetimer) {
+					clearTimeout(updatetimer);
+				}
+				updatetimer = setTimeout(updateObjects, 250);
+			}
+			function createMaterials() {
+				if (materials.length < settings.materials) {
+					for (var i = materials.length; i < settings.materials; i++) {
+						materials[i] = new THREE.MeshLambertMaterial({ color: 0xffffff * Math.random() });
+					}
+				}
+			}
+			function createShapes() {
+				var types = ['box', 'sphere', 'cylinder', 'cone'];
+				if (shapes.length < settings.shapes) {
+					for (var i = shapes.length; i < settings.shapes; i++) {
+						//shapes[i] = new THREE.BoxGeometry2(Math.random() * 10, Math.random() * 10, Math.random() * 10);
+						var type = types[Math.floor(Math.random() * 1000) % types.length];
+						switch (type) {
+							case 'box':
+								shapes[i] = new THREE.BoxGeometry(Math.random() * 10, Math.random() * 10, Math.random() * 10);
+								break;
+							case 'sphere':
+								shapes[i] = new THREE.SphereGeometry(Math.random() * 10 + .5);
+								break;
+							case 'cylinder':
+								var r = Math.random() * 5 + .5;
+								shapes[i] = new THREE.CylinderGeometry(r, r, Math.random() * 10 + 5);
+								break;
+							case 'cone':
+								shapes[i] = new THREE.CylinderGeometry(0, Math.random() * 5 + .5, Math.random() * 10 + 5);
+								break;
+						}
+						shapes[i].computeFaceNormals();
+					}
+				}
+			}
+			function updateObjects() {
+				updatetimer = false;
+				console.log('do update!');
+				this.createShapes();
+				this.createMaterials();
+
+				// If we have more boxes than we need, unmerge the ones we don't need anymore
+				while (boxes.length >= settings.objects) {
+					merged.unmerge(boxes.pop());
+				}
+
+				// If we've removed materials, get rid of all boxes which used ones which aren't in use anymore
+				if (settings.materials > lastsettings.materials) {
+					while (boxes.length > 0) merged.unmerge(boxes.pop()); // remove all!
+				} else if (settings.materials < lastsettings.materials) {
+					for (var i = boxes.length - 1; i >= 0; i--) {
+						if (materials.indexOf(boxes[i].material) > settings.materials - 1) {
+							merged.unmerge(boxes[i]);
+							boxes.splice(i, 1);
+						}
+					}
+				}
+				// If we've removed shapes, get rid of all boxes which used ones which aren't in use anymore
+				if (settings.shapes > lastsettings.shapes) {
+					while (boxes.length > 0) merged.unmerge(boxes.pop()); // remove all!
+				} else if (settings.shapes < lastsettings.shapes) {
+					for (var i = boxes.length - 1; i >= 0; i--) {
+						if (shapes.indexOf(boxes[i].geometry) > settings.shapes - 1) {
+							merged.unmerge(boxes[i]);
+							boxes.splice(i, 1);
+						}
+					}
+				}
+
+
+				// If we need more boxes, create them and merge them into the MergedMesh
+				for (var i = boxes.length; i < settings.objects; i++) {
+					var newbox = new THREE.Mesh(shapes[Math.round(Math.random() * 1000) % settings.shapes], materials[Math.round(Math.random() * 1000) % settings.materials]);
+					//newbox.position.set(2 * i, 0, -5);
+
+					boxes.push(newbox);
+					merged.merge(newbox);
+				}
+				for (var i = 0; i < boxes.length; i++) {
+					boxes[i].position.set(Math.random() * settings.viewingArea - settings.viewingArea/2, Math.random() * settings.viewingArea - settings.viewingArea / 2, Math.random() * settings.viewingArea - settings.viewingArea / 2);
+					boxes[i].rotation.set((Math.random() * 2 * Math.PI) - Math.PI, (Math.random() * 2 * Math.PI) - Math.PI, (Math.random() * 2 * Math.PI) - Math.PI);
+				}
+
+				//merged.forceUpdate(); // FIXME - shouldn't be necessary
+
+				lastsettings.objects = settings.objects;
+				lastsettings.materials = settings.materials;
+				lastsettings.shapes = settings.shapes;
+			}
 		</script>
 
 	</body>
