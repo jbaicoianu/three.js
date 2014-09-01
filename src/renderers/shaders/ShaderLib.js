@@ -48,9 +48,9 @@ THREE.ShaderLib = {
 				THREE.ShaderChunk[ "morphtarget_vertex" ],
 				THREE.ShaderChunk[ "skinning_vertex" ],
 				THREE.ShaderChunk[ "default_vertex" ],
-				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 
 				THREE.ShaderChunk[ "worldpos_vertex" ],
+				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 				THREE.ShaderChunk[ "envmap_vertex" ],
 				THREE.ShaderChunk[ "shadowmap_vertex" ],
 
@@ -150,9 +150,9 @@ THREE.ShaderLib = {
 				THREE.ShaderChunk[ "morphtarget_vertex" ],
 				THREE.ShaderChunk[ "skinning_vertex" ],
 				THREE.ShaderChunk[ "default_vertex" ],
-				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 
 				THREE.ShaderChunk[ "worldpos_vertex" ],
+				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 				THREE.ShaderChunk[ "envmap_vertex" ],
 				THREE.ShaderChunk[ "lights_lambert_vertex" ],
 				THREE.ShaderChunk[ "shadowmap_vertex" ],
@@ -278,11 +278,11 @@ THREE.ShaderLib = {
 				THREE.ShaderChunk[ "morphtarget_vertex" ],
 				THREE.ShaderChunk[ "skinning_vertex" ],
 				THREE.ShaderChunk[ "default_vertex" ],
-				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 
 			"	vViewPosition = -mvPosition.xyz;",
 
 				THREE.ShaderChunk[ "worldpos_vertex" ],
+				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 				THREE.ShaderChunk[ "envmap_vertex" ],
 				THREE.ShaderChunk[ "lights_phong_vertex" ],
 				THREE.ShaderChunk[ "shadowmap_vertex" ],
@@ -375,8 +375,8 @@ THREE.ShaderLib = {
 
 			"	gl_Position = projectionMatrix * mvPosition;",
 
-				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 				THREE.ShaderChunk[ "worldpos_vertex" ],
+				THREE.ShaderChunk[ "logdepthbuf_vertex" ],
 				THREE.ShaderChunk[ "shadowmap_vertex" ],
 
 			"}"
