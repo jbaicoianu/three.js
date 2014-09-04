@@ -60,14 +60,19 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
             case WebGLRenderingContext.FLOAT :
             case WebGLRenderingContext.UNSIGNED_BYTE :
             case WebGLRenderingContext.UNSIGNED_SHORT :
+            case 'SCALAR' :
                 return 1;
             case WebGLRenderingContext.FLOAT_VEC2 :
+            case 'VEC2' :
                 return 2;
             case WebGLRenderingContext.FLOAT_VEC3 :
+            case 'VEC3' :
                 return 3;
             case WebGLRenderingContext.FLOAT_VEC4 :
+            case 'VEC4' :
                 return 4;
             case WebGLRenderingContext.FLOAT_MAT4 :
+            case 'MAT4' :
                 return 16;
             default:
                 return null;
@@ -337,6 +342,10 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
 	        case WebGLRenderingContext.FLOAT_VEC2 :
 	        case WebGLRenderingContext.FLOAT_VEC3 :
 	        case WebGLRenderingContext.FLOAT_VEC4 :
+          case 'SCALAR' :
+          case 'VEC2' :
+          case 'VEC3' :
+          case 'VEC4' :
 	        	glResource = new Float32Array(resource, 0, parameter.count * componentsPerElementForGLType(parameter.type));
 	        	break;
 	        default:
@@ -406,6 +415,7 @@ THREE.glTFLoader.prototype.load = function( url, callback ) {
     	var glResource = null;
     	switch (parameter.type) {
 	        case WebGLRenderingContext.FLOAT_MAT4 :
+	        case 'MAT4' :
 	        	glResource = new Float32Array(resource, 0, parameter.count * componentsPerElementForGLType(parameter.type));
 	        	break;
 	        default:
