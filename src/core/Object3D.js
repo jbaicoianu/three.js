@@ -603,7 +603,9 @@ Object.assign( Object3D.prototype, EventDispatcher.prototype, {
 
 		// standard Object3D serialization
 
-		var object = {};
+		var object = {},
+		    animations = [],
+		    bones = [];
 
 		object.uuid = this.uuid;
 		object.type = this.type;
@@ -658,6 +660,28 @@ Object.assign( Object3D.prototype, EventDispatcher.prototype, {
 
 		}
 
+		if ( this.animations !== undefined ) {
+
+			for (var i = 0; i < this.animations.length; i++) {
+
+				animations.push( THREE.AnimationClip.toJSON( this.animations[i] ) );
+
+			}
+
+		}
+
+		if ( this.skeleton !== undefined ) {
+
+			for (var i = 0; i < this.skeleton.bones.length; i++) {
+
+				bones.push( this.skeleton.bones[ i ].uuid );
+
+			}
+
+			object.skeleton = {bones: bones};
+
+		}
+
 		//
 
 		if ( this.children.length > 0 ) {
@@ -679,10 +703,12 @@ Object.assign( Object3D.prototype, EventDispatcher.prototype, {
 			var textures = extractFromCache( meta.textures );
 			var images = extractFromCache( meta.images );
 
+			if ( animations.length > 0 ) output.animations = animations;
 			if ( geometries.length > 0 ) output.geometries = geometries;
 			if ( materials.length > 0 ) output.materials = materials;
 			if ( textures.length > 0 ) output.textures = textures;
 			if ( images.length > 0 ) output.images = images;
+			if ( bones.length > 0 ) output.skeleton = {bones: bones};
 
 		}
 
@@ -741,6 +767,8 @@ Object.assign( Object3D.prototype, EventDispatcher.prototype, {
 
 		this.frustumCulled = source.frustumCulled;
 		this.renderOrder = source.renderOrder;
+
+		this.animations = source.animations;
 
 		this.userData = JSON.parse( JSON.stringify( source.userData ) );
 
