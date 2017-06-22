@@ -114,6 +114,40 @@ SkinnedMesh.prototype = Object.assign( Object.create( Mesh.prototype ), {
 
 	},
 
+	rebindByName: function ( rootobject ) {
+
+		if (!rootobject) rootobject = this;
+
+		rootobject.updateMatrixWorld(true);
+
+		if (this.skeleton && this.skeleton.bones.length > 0) {
+
+			var objectNames = {},
+			    oldbones = this.skeleton.bones,
+			    newbones = [];
+
+			rootobject.traverse( function( n ) {
+
+				if ( n.name ) {
+
+					objectNames[ n.name ] = n;
+
+				}
+
+			});
+
+			for ( var i = 0; i < oldbones.length; i++ ) {
+
+				newbones[ i ] = objectNames[ oldbones[ i ].name ];
+
+			}
+
+			this.bind( new THREE.Skeleton( newbones ) );
+
+		}
+
+	},
+
 	pose: function () {
 
 		this.skeleton.pose();
