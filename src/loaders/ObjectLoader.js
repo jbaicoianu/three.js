@@ -31,6 +31,8 @@ import { LineSegments } from '../objects/LineSegments';
 import { LOD } from '../objects/LOD';
 import { Mesh } from '../objects/Mesh';
 import { SkinnedMesh } from '../objects/SkinnedMesh';
+import { Skeleton } from '../objects/Skeleton';
+import { Bone } from '../objects/Bone';
 import { Fog } from '../scenes/Fog';
 import { FogExp2 } from '../scenes/FogExp2';
 import { HemisphereLight } from '../lights/HemisphereLight';
@@ -139,6 +141,12 @@ Object.assign( ObjectLoader.prototype, {
 		if ( json.animations ) {
 
 			object.animations = this.parseAnimations( json.animations );
+
+		}
+
+		if ( json.skeleton ) {
+
+			this.parseSkeletons( json, object );
 
 		}
 
@@ -409,6 +417,79 @@ Object.assign( ObjectLoader.prototype, {
 
 	},
 
+	parseSkeletons: function ( json, rootobject ) {
+
+		// Recursively build a map of uuids to objects from the root object
+
+		function getObjectUUIDMap( object, objectmap ) {
+
+			if ( ! objectmap ) objectmap = {};
+
+			objectmap[ object.uuid ] = object;
+
+			if ( object.children && object.children.length > 0 ) {
+
+				for ( var i = 0; i < object.children.length; i++ ) {
+
+					  getObjectUUIDMap( object.children[ i ], objectmap );
+
+				}
+
+			}
+
+			return objectmap;
+
+		}
+
+		// Recursively build a list of objects with skeletons from the JSON
+
+		function getSkinnedMeshes( object, objectlist ) {
+
+			if ( ! objectlist ) objectlist = [];
+
+			if ( object.skeleton && object.skeleton.bones && object.skeleton.bones.length > 0 ) {
+
+				objectlist.push(object);
+
+			}
+
+			if ( object.children && object.children.length > 0 ) {
+
+				for ( var i = 0; i < object.children.length; i++ ) {
+
+				  getSkinnedMeshes( object.children[ i ], objectlist );
+
+				}
+
+			}
+
+			return objectlist;
+
+		}
+
+		var objects = getObjectUUIDMap( rootobject ),
+		    skinned = getSkinnedMeshes( json.object );
+
+		for ( var i = 0; i < skinned.length; i++ ) {
+
+			var jsonbones = skinned[ i ].skeleton.bones,
+			    bones = [];
+
+			for ( var j = 0; j < jsonbones.length; j ++ ) {
+
+				var boneid = jsonbones[ j ];
+				bones.push( objects[ boneid ] );
+
+			}
+
+			var skeleton = new Skeleton(bones);
+
+			objects[ skinned[ i ].uuid ].skeleton = new Skeleton( bones );
+
+		}
+
+	},
+
 	parseImages: function ( json, onLoad ) {
 
 		var scope = this;
@@ -663,7 +744,14 @@ Object.assign( ObjectLoader.prototype, {
 
 				case 'SkinnedMesh':
 
-					console.warn( 'THREE.ObjectLoader.parseObject() does not support SkinnedMesh yet.' );
+					var geometry = getGeometry( data.geometry );
+					var material = getMaterial( data.material );
+
+					material.skinning = true;
+
+					object = new SkinnedMesh( geometry, material );
+
+					break;
 
 				case 'Mesh':
 
@@ -722,6 +810,12 @@ Object.assign( ObjectLoader.prototype, {
 				case 'Group':
 
 					object = new Group();
+
+					break;
+
+				case 'Bone':
+
+					object = new Bone();
 
 					break;
 
